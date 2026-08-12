@@ -959,13 +959,13 @@ VIEWS.ob = () => {
     const hint = master
       ? (forecast ? "Диплома ещё нет — укажите балл, на который идёте." : "По 5-балльной шкале, как в приложении к диплому.")
         + " По нему подберу магистерские программы, куда реально поступить."
-      : (forecast ? "Аттестата ещё нет — укажите балл, на который идёте." : "По 5-балльной шкале, например 4.6.")
+      : (forecast ? "Аттестата ещё нет — укажите балл, на который идёте." : "По 5-балльной шкале, например 4,6 — запятая и точка обе подходят.")
         + " По нему подберу вузы, куда реально поступить.";
     box.innerHTML = `<h1>${title}</h1>
       <div class="gbar"><i style="width:95%"></i></div>
       <p class="sub">${hint}</p>
       <div class="card iform">
-        <label>Средний балл<input id="gpa-in" type="number" step="0.01" min="2" max="5" inputmode="decimal" placeholder="4.60"></label>
+        <label>Средний балл<input id="gpa-in" type="text" inputmode="decimal" autocomplete="off" maxlength="5" placeholder="4,6 или 4.6"></label>
         <button class="btn" style="border:0" onclick="gpaManual()">Дальше</button>
         <button style="background:none;border:0;color:var(--sky);font-weight:600;cursor:pointer;text-align:left;padding:10px 0 0;font-size:13.5px" onclick="gpaCalc()">Не знаю — посчитать по оценкам</button>
         <p class="cc" id="gpa-err" style="color:var(--err);min-height:1.2em"></p>
@@ -982,7 +982,7 @@ VIEWS.ob = () => {
       </div>`;
     window.gpaManual = () => {
       const v = parseFloat(document.getElementById("gpa-in").value.replace(",", "."));
-      if (isNaN(v)||v<2||v>5) { document.getElementById("gpa-err").textContent="Балл от 2 до 5 — например 4.6."; return; }
+      if (isNaN(v)||v<2||v>5) { document.getElementById("gpa-err").textContent="Балл от 2 до 5 — например 4,6 или 4.6."; return; }
       gpa = Math.round(v*100)/100; trackStep();
     };
     window.gpaCalc = () => { document.getElementById("gpa-calc").hidden = false; };
