@@ -577,8 +577,7 @@
 (function(){
   let t = null;
   try { t = localStorage.getItem("thamesTheme"); } catch(e){}
-  if (t !== "dark" && t !== "light")
-    t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (t !== "dark" && t !== "light") t = "light";
   document.documentElement.dataset.theme = t;
 })();
 function toggleTheme(){
@@ -2361,7 +2360,7 @@ VIEWS.grtopic = slug => {
         });
       } else if (ex.type === "tf") {
         const q = document.createElement("p");
-        q.innerHTML = "<b>" + (qi + 1) + ".</b> <b style='font-weight:600'>" + esc(item.s) + "</b>";
+        q.innerHTML = "<b>" + (qi + 1) + ".</b><span class='gx-ru'>" + esc(item.s) + "</span>";
         wrap.appendChild(q);
         [["Верно", true], ["Неверно", false]].forEach(([label, val]) => {
           const b = document.createElement("button");
@@ -2380,7 +2379,7 @@ VIEWS.grtopic = slug => {
         });
       } else if (ex.type === "mc") {
         const q = document.createElement("p");
-        q.innerHTML = "<b>" + (qi + 1) + ".</b> " + esc(item.q);
+        q.innerHTML = "<b>" + (qi + 1) + ".</b><span class='gx-ru'>" + esc(item.q) + "</span>";
         wrap.appendChild(q);
         const btns = [];
         item.options.forEach((opt, oi) => {
@@ -2401,7 +2400,7 @@ VIEWS.grtopic = slug => {
         });
       } else if (ex.type === "gap") {
         const q = document.createElement("p");
-        q.innerHTML = "<b>" + (qi + 1) + ".</b> " + esc(item.q);
+        q.innerHTML = "<b>" + (qi + 1) + ".</b><span class='gx-ru'>" + esc(item.q) + "</span>";
         wrap.appendChild(q);
         const row = document.createElement("div");
         row.style.cssText = "display:flex;gap:8px;margin-top:6px;flex-wrap:wrap";
