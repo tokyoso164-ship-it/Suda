@@ -458,6 +458,9 @@
     border-radius:11px; padding:12px; color:var(--tx); font-size:15px; font-family:inherit}
   .iform textarea{resize:vertical; line-height:1.55; width:100%}
   .ob-opts{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+  .ob-back{background:none;border:0;color:var(--sky);font-weight:600;font-size:13.5px;
+    cursor:pointer;padding:8px 2px;margin:0 0 4px;display:inline-block}
+  .ob-opts button.ob-chosen{border-color:var(--tile);background:rgba(199,91,57,.10)}
   .ob-opts button{text-align:left; background:var(--cream); border:1px solid var(--line); color:var(--tx);
     border-radius:13px; padding:13px 15px; font-size:14.5px; font-weight:600; cursor:pointer; font-family:inherit}
   .ob-opts button:hover{border-color:var(--tile)}
@@ -734,6 +737,8 @@ document.addEventListener("DOMContentLoaded", () => {
 const LS = "thamesOffline";
 let store = {};
 try { store = JSON.parse(localStorage.getItem(LS)) || {}; } catch(e) { store = {}; }
+// имя для приветствий: в демо меню доступно и до «входа»
+const uname = () => (store.user && store.user.name) || "гость";
 function save(){ localStorage.setItem(LS, JSON.stringify(store)); }
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 const NOTE = t => `<div class="demo-note">💡 ${t}</div>`;
@@ -1044,7 +1049,7 @@ VIEWS.home = () => {
       </svg>
       <div class="hh-copy">
         <span class="stamp" style="font-size:10px">главная</span>
-        <h1 style="font-size:24px">Привет, ${esc(store.user.name)}!</h1>
+        <h1 style="font-size:24px">Привет, ${esc(uname())}!</h1>
         <p>Статьи о британских вузах, наши разборы и гайды.</p>
       </div>
     </div>
@@ -1087,22 +1092,47 @@ VIEWS.article = slug => {
 addView("ob", "");
 VIEWS.ob = () => {
   const answers = {}; let i = 0, gpa = null;
+  // trail — индексы отвеченных вопросов: по нему работает шаг назад.
+  // Возвращаясь, снимаем ответы начиная с этого вопроса: анкета ветвится,
+  // и от изменённого ответа зависит, какие вопросы человек вообще увидит.
+  const trail = []; let phase = "q";
   const box = document.getElementById("v-ob");
+  const backBtn = (on) => on
+    ? `<button class="ob-back" onclick="obBack()">← Назад</button>` : "";
   // showIf: ["ключ","значение"] — показать при совпадении; ["ключ","!значение"] — при НЕсовпадении
   const shown = qd => { if (!qd.showIf) return true;
     const [k, v] = qd.showIf;
     return v.startsWith("!") ? answers[k] !== v.slice(1) : answers[k] === v; };
+  let was;                       // ответ, к которому вернулись — для подсветки
+  window.obBack = () => {
+    if (phase === "track") { gpaStep(); return; }
+    if (!trail.length) return;
+    const prev = trail.pop();
+    was = answers[QUESTIONS[prev].k];
+    QUESTIONS.slice(prev).forEach(qd => { delete answers[qd.k]; });
+    i = prev; q();
+  };
   function q(){
     while (i < QUESTIONS.length && !shown(QUESTIONS[i])) i++;
     if (i >= QUESTIONS.length) return gpaStep();
     const cur = QUESTIONS[i];
+    phase = "q";
     box.innerHTML = `<h1>Пара минут — и соберу план</h1>
       <div class="gbar"><i style="width:${(i/(QUESTIONS.length+1))*100}%"></i></div>
+      ${backBtn(trail.length > 0)}
       <h3 style="font-size:18px;margin:0 0 6px">${i+1}/${QUESTIONS.length} · ${esc(cur.t)}</h3>
       ${cur.o ? `<div class="ob-opts">${cur.o.map(o=>`<button onclick="obAnswer('${esc(o).replace(/'/g,"\\'")}')">${esc(o)}</button>`).join("")}</div>`
               : `<div class="iform" style="margin-top:12px"><textarea id="ob-free" rows="3" placeholder="Ответьте своими словами"></textarea>
                  <button class="btn" style="border:0;margin-top:10px" onclick="obAnswer(document.getElementById('ob-free').value.trim())">Дальше</button></div>`}`;
-    window.obAnswer = v => { if(!v) return; answers[cur.k]=v; i++; q(); };
+    if (was !== undefined) {
+      const mark = [...box.querySelectorAll(".ob-opts button")]
+        .find(b => b.textContent.trim() === String(was).trim());
+      if (mark) mark.classList.add("ob-chosen");
+      const free = document.getElementById("ob-free");
+      if (free) free.value = was;
+      was = undefined;
+    }
+    window.obAnswer = v => { if(!v) return; trail.push(i); answers[cur.k]=v; i++; q(); };
   }
   function gpaStep(){
     const master = answers.target === "Магистратура в UK";
@@ -1115,8 +1145,10 @@ VIEWS.ob = () => {
         + " По нему подберу магистерские программы, куда реально поступить."
       : (forecast ? "Аттестата ещё нет — укажите балл, на который идёте." : "По 5-балльной шкале, например 4,6 — запятая и точка обе подходят.")
         + " По нему подберу вузы, куда реально поступить.";
+    phase = "gpa";
     box.innerHTML = `<h1>${title}</h1>
       <div class="gbar"><i style="width:95%"></i></div>
+      ${backBtn(trail.length > 0)}
       <p class="sub">${hint}</p>
       <div class="card iform">
         <label>Средний балл<input id="gpa-in" type="text" inputmode="decimal" autocomplete="off" maxlength="5" placeholder="4,6 или 4.6"></label>
@@ -1151,7 +1183,9 @@ VIEWS.ob = () => {
     window.gpaUse = () => { gpa = window.gpaRecalc(); if (gpa!=null) trackStep(); };
   }
   function trackStep(){
+    phase = "track";
     box.innerHTML = `<h1>Какой трек вам нужен?</h1><div class="gbar"><i style="width:100%"></i></div>
+      ${backBtn(true)}
       <div class="ob-opts">
         <button onclick="obTrack('admissions')">🎓 Поступление в UK<br><span class="cc">план цикла UCAS + IELTS и все инструменты</span></button>
         <button onclick="obTrack('ielts')">📝 Подготовка к IELTS<br><span class="cc">эссе, mock-интервью, план подготовки</span></button>
@@ -1190,7 +1224,7 @@ VIEWS.plan = () => {
       : needFnd
         ? "Показаны только вузы с Foundation-маршрутом (из каталога топ-100): с вашим аттестатом прямой вход в бакалавриат недоступен."
         : "Каталог топ-100, включая вузы без Foundation — ваш аттестат позволяет прямой вход.";
-  box.innerHTML = `<h1>Привет, ${esc(store.user.name)}!</h1>
+  box.innerHTML = `<h1>Привет, ${esc(uname())}!</h1>
     <p class="sub">${NOTE("Демонстрационный план: дедлайны рассчитаны от вашего ответа «когда подаётесь». В полной версии план точнее и приходит с напоминаниями.")}</p>
     ${store.plan.map((s,k) => {
       const [cls,label] = s.done ? ["ok","готово"] : badge(days(s.due));
@@ -2972,7 +3006,7 @@ VIEWS.profile = () => {
     <div class="card"><b style="font-size:13px">Личные данные</b>
       <p class="cc" style="margin:6px 0 10px">E-mail: <b>${esc(store.user.email)}</b></p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <input id="pf-name" value="${esc(store.user.name)}" maxlength="60" aria-label="Имя"
+        <input id="pf-name" value="${esc(uname())}" maxlength="60" aria-label="Имя"
           style="flex:1;min-width:160px;background:var(--milk);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit">
         <button class="btn" style="border:0" onclick="pfSaveName()">Сохранить имя</button></div>
       <p class="cc" id="pf-status" style="min-height:1.2em;margin:8px 0 0"></p></div>
