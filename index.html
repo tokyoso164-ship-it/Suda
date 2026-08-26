@@ -752,7 +752,12 @@ const QUESTIONS = [
   {k:"programs", t:"Какое направление интересует?", o:["Бизнес и менеджмент","Экономика и финансы","Computer Science и IT","Инженерия","Право","Медицина и биология","Дизайн и искусство","Гуманитарные науки","Ещё не определился(лась)"]},
   {k:"unis", t:"Выбрали ли вы вузы?", o:["Да, есть шорт-лист — напишу","Ещё не определился(лась) — подберите варианты"]},
   {k:"unis_list", t:"Перечислите вузы, которые рассматриваете.", showIf:["unis","Да, есть шорт-лист — напишу"]},
+  {k:"cert_type", t:"Какой документ об окончании школы у вас будет?", o:["Аттестат своей страны","IB Diploma","A-levels","Другое — напишу сам(а)"], showIf:["target","!Магистратура в UK"]},
+  {k:"cert_type_other", t:"Что именно? Напишите название документа и страну — от этого зависит, возьмут ли на бакалавриат напрямую или нужен Foundation.", showIf:["cert_type","Другое — напишу сам(а)"]},
   {k:"cert_country", t:"Из какой страны ваш аттестат (или будет)?", o:["Россия","Казахстан","Беларусь","Другая страна"], showIf:["target","!Магистратура в UK"]},
+  {k:"cert_country_other", t:"Какая именно страна? Напишите название — проверю, принимают ли её аттестат на бакалавриат напрямую.", showIf:["cert_country","Другая страна"]},
+  {k:"ib_points", t:"Сколько баллов IB (из 45) у вас или прогнозируется?", o:["40–45","36–39","32–35","28–31","Меньше 28","Ещё не знаю"], showIf:["cert_type","IB Diploma"]},
+  {k:"alevels", t:"Какие оценки A-level у вас или прогнозируются?", o:["A*A*A и выше","A*AA / AAA","AAB","ABB","BBB","BBC и ниже","Ещё не знаю"], showIf:["cert_type","A-levels"]},
   {k:"cert_status", t:"Аттестат уже на руках?", o:["Да, аттестат получен","Ещё учусь — балл будет прогнозом"], showIf:["target","!Магистратура в UK"]},
   {k:"bachelor_uni", t:"Где вы учитесь или учились на бакалавриате? Напишите вуз и страну.", showIf:["target","Магистратура в UK"]},
   {k:"bachelor_field", t:"Ваше бакалаврское направление относительно целевой магистратуры?", o:["То же направление","Смежное направление","Другое — меняю сферу"], showIf:["target","Магистратура в UK"]},
@@ -874,13 +879,52 @@ const CATALOG = [
   ["Edge Hill University", "Ормскерк", ["business", "cs", "humanities", "life"], 3.2, 4.5, "Foundation Year", "Кампус-парк под Ливерпулем, сильная педагогика", true],
   ["Solent University", "Саутгемптон", ["art", "business", "cs", "engineering"], 3.2, 4.5, "International Foundation", "Морские и медиа-профессии, город-порт", true]
 ];
-const FOUNDATION_COUNTRIES = ["Россия", "Казахстан", "Беларусь"];
-// Foundation не нужен магистрам (есть Pre-Masters) и, в большинстве случаев,
-// действующим студентам бакалавриата — обычно засчитывают 1–2 закрытых курса.
-function needsFoundation(certCountry, status = "", target = ""){
-  if (target === "Магистратура в UK") return false;
-  if ((status || "").startsWith("Студент/выпускник бакалавриата")) return false;
-  return FOUNDATION_COUNTRIES.includes(certCountry) || !certCountry;
+// Куда ведёт документ об окончании школы. Третий исход — «не выяснено»:
+// раньше любая «другая страна» считалась пригодной для прямого входа, и
+// узбекскому аттестату показывали Оксбридж, куда с ним не попасть.
+const DIRECT_CERTS = ["IB Diploma", "A-levels"];
+const DIRECT_COUNTRIES = ["австрия","бельгия","великобритания","венгрия","германия","греция",
+  "дания","ирландия","испания","италия","кипр","латвия","литва","люксембург","мальта",
+  "нидерланды","норвегия","польша","португалия","румыния","словакия","словения","финляндия",
+  "франция","хорватия","чехия","швейцария","швеция","эстония"];
+const FOUNDATION_COUNTRIES = ["россия","казахстан","беларусь","белоруссия","азербайджан",
+  "армения","грузия","киргизия","кыргызстан","молдова","монголия","таджикистан",
+  "туркменистан","узбекистан","украина"];
+const normCountry = s => String(s || "").trim().toLowerCase().replace(/ё/g, "е");
+function entryRoute(a = {}){
+  const target = a.target || "", status = a.status || "";
+  if (target === "Магистратура в UK")
+    return {route:"direct", why:"Магистратура: Foundation не нужен. Если балла не хватает, у части вузов есть Pre-Masters."};
+  if (status.startsWith("Студент/выпускник бакалавриата"))
+    return {route:"direct", why:"Вы уже студент бакалавриата: обычно засчитывают 1–2 закрытых курса вместо Foundation. Вуз может решить иначе — проверит куратор."};
+  const cert = a.cert_type || "";
+  if (DIRECT_CERTS.includes(cert))
+    return {route:"direct", why:cert + " — британская школьная программа, её принимают на бакалавриат напрямую, Foundation не нужен."};
+  if (cert === "Другое — напишу сам(а)")
+    return {route:"unclear", why:"Вы указали свой документ — по названию маршрут не определить автоматически. Пока показываю варианты с Foundation: это нижняя граница, куратор проверит, возможен ли прямой вход."};
+  const shown = a.cert_country === "Другая страна" ? (a.cert_country_other || "") : (a.cert_country || "");
+  const c = normCountry(shown);
+  if (!c) return {route:"foundation", why:"Страна аттестата не указана — считаю по умолчанию, что нужен Foundation."};
+  if (DIRECT_COUNTRIES.includes(c))
+    return {route:"direct", why:"Аттестат (" + shown + ") обычно принимают на бакалавриат напрямую. Конкретный вуз может потребовать профильные экзамены — проверит куратор."};
+  if (FOUNDATION_COUNTRIES.includes(c))
+    return {route:"foundation", why:"Со школьным аттестатом (" + shown + ") прямой вход в британский бакалавриат недоступен — нужен год Foundation или год местного вуза."};
+  return {route:"unclear", why:"Аттестат страны «" + shown + "» автоматически не проверить. Показываю варианты с Foundation — это безопасная нижняя граница; куратор уточнит, возможен ли прямой вход."};
+}
+// Каталог хранит требования в 5-балльной шкале — приводим к ней IB и A-levels.
+// Огрубление для шорт-листа, а не таблица эквивалентности.
+const IB_TO_GPA = {"40–45":5.0, "36–39":4.7, "32–35":4.4, "28–31":4.0, "Меньше 28":3.6};
+const ALEVEL_TO_GPA = {"A*A*A и выше":5.0, "A*AA / AAA":4.8, "AAB":4.6, "ABB":4.3, "BBB":4.0, "BBC и ниже":3.6};
+function scoreOf(a = {}, gpa = null){
+  if (a.cert_type === "IB Diploma"){
+    const v = IB_TO_GPA[a.ib_points];
+    return [v ?? null, v != null ? "IB " + a.ib_points : "IB, балл ещё не известен"];
+  }
+  if (a.cert_type === "A-levels"){
+    const v = ALEVEL_TO_GPA[a.alevels];
+    return [v ?? null, v != null ? "A-level " + a.alevels : "A-levels, оценки ещё не известны"];
+  }
+  return [gpa ?? null, gpa != null ? "средний балл " + gpa.toFixed(2) : "средний балл не указан"];
 }
 const FIELD_TITLES = {business:"Бизнес и менеджмент", economics:"Экономика и финансы", cs:"Computer Science и IT",
   engineering:"Инженерия", law:"Право", life:"Медицина и биология", art:"Дизайн и искусство", humanities:"Гуманитарные науки"};
@@ -1104,8 +1148,9 @@ VIEWS.ob = () => {
     const [k, v] = qd.showIf;
     return v.startsWith("!") ? answers[k] !== v.slice(1) : answers[k] === v; };
   let was;                       // ответ, к которому вернулись — для подсветки
+  const gpaSkipped = () => answers.cert_type === "IB Diploma" || answers.cert_type === "A-levels";
   window.obBack = () => {
-    if (phase === "track") { gpaStep(); return; }
+    if (phase === "track" && !gpaSkipped()) { gpaStep(); return; }
     if (!trail.length) return;
     const prev = trail.pop();
     was = answers[QUESTIONS[prev].k];
@@ -1135,6 +1180,11 @@ VIEWS.ob = () => {
     window.obAnswer = v => { if(!v) return; trail.push(i); answers[cur.k]=v; i++; q(); };
   }
   function gpaStep(){
+    // у выпускника IB или A-levels нет «среднего балла по 5-балльной» —
+    // его оценки уже спросили отдельным вопросом
+    if (answers.cert_type === "IB Diploma" || answers.cert_type === "A-levels"){
+      gpa = null; return trackStep();
+    }
     const master = answers.target === "Магистратура в UK";
     const forecast = master ? (answers.degree_status||"").startsWith("Заканчиваю")
                             : (answers.cert_status||"").startsWith("Ещё учусь");
@@ -1185,7 +1235,7 @@ VIEWS.ob = () => {
   function trackStep(){
     phase = "track";
     box.innerHTML = `<h1>Какой трек вам нужен?</h1><div class="gbar"><i style="width:100%"></i></div>
-      ${backBtn(true)}
+      ${backBtn(trail.length > 0 || !gpaSkipped())}
       <div class="ob-opts">
         <button onclick="obTrack('admissions')">🎓 Поступление в UK<br><span class="cc">план цикла UCAS + IELTS и все инструменты</span></button>
         <button onclick="obTrack('ielts')">📝 Подготовка к IELTS<br><span class="cc">эссе, mock-интервью, план подготовки</span></button>
@@ -1214,16 +1264,12 @@ VIEWS.plan = () => {
   const badge = d => d < 0 ? ["soon","просрочено"] : d <= 7 ? ["soon", d+" дн."] : ["far", d+" дн."];
   const a = store.survey.answers;
   const level = a.target === "Магистратура в UK" ? "master" : "bachelor";
-  const needFnd = needsFoundation(a.cert_country || "", a.status || "", a.target || "");
-  const m = matchUnis(DIRS[a.programs]||"", store.survey.gpa, IELTS_BAND[a.ielts] ?? null, needFnd, level);
+  const er = entryRoute(a);
+  const needFnd = er.route !== "direct";
+  const [score] = scoreOf(a, store.survey.gpa);
+  const m = matchUnis(DIRS[a.programs]||"", score, IELTS_BAND[a.ielts] ?? null, needFnd, level);
   const undecided = (a.unis||"").startsWith("Ещё");
-  const routeNote = level === "master"
-    ? "Подбор магистратуры: Foundation не нужен, балл — средний по диплому; где его не хватает, отмечен Pre-Masters."
-    : (a.status||"").startsWith("Студент/выпускник бакалавриата")
-      ? "Вы уже студент бакалавриата — Foundation в большинстве случаев не нужен: обычно засчитывают 1–2 закрытых курса (вуз может решить иначе, финально проверит куратор)."
-      : needFnd
-        ? "Показаны только вузы с Foundation-маршрутом (из каталога топ-100): с вашим аттестатом прямой вход в бакалавриат недоступен."
-        : "Каталог топ-100, включая вузы без Foundation — ваш аттестат позволяет прямой вход.";
+  const routeNote = er.why;
   box.innerHTML = `<h1>Привет, ${esc(uname())}!</h1>
     <p class="sub">${NOTE("Демонстрационный план: дедлайны рассчитаны от вашего ответа «когда подаётесь». В полной версии план точнее и приходит с напоминаниями.")}</p>
     ${store.plan.map((s,k) => {
