@@ -2506,19 +2506,42 @@ const VOC_MODULES = [{"slug": "theme-education-a2", "kind": "theme", "level": "A
 {
   const css = document.createElement("style");
   css.textContent = `
-.vx-btn{display:inline-block;margin:6px 8px 0 0;cursor:pointer;font-family:inherit;font-size:13px;color:inherit;
-  background:rgba(128,128,128,.10);border:1.5px solid rgba(128,128,128,.35);border-radius:999px;padding:7px 15px}
-.vx-block{display:block;width:100%;text-align:left;border-radius:12px;padding:9px 13px}
-.vx-input{flex:1;min-width:150px;padding:8px 12px;font-size:13px;font-family:inherit;color:inherit;
-  background:rgba(128,128,128,.08);border:1.5px solid rgba(128,128,128,.35);border-radius:10px}
-.vx-panel{display:block;margin:8px 0 2px;padding:9px 13px;color:inherit;background:rgba(128,128,128,.08);
-  border-left:3px solid var(--tile,#C75B39);border-radius:0 10px 10px 0}
-.vx-hint{opacity:.72;font-size:12px}
-.vx-bar{height:8px;border-radius:999px;background:rgba(128,128,128,.2);overflow:hidden}
-.vx-bar-fill{height:100%;width:0;background:var(--tile,#C75B39);transition:width .3s}
-.vx-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 0;border-top:1px solid rgba(128,128,128,.2)}
-.vx-big{font-family:var(--serif);font-size:26px;font-weight:600;margin:10px 0}
-.vx-tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(128,128,128,.15);margin-left:6px}`;
+.vx-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;margin:0 8px 8px 0;
+  min-height:44px;padding:11px 18px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;
+  color:var(--tx);background:var(--milk);border:1.5px solid var(--line);border-radius:12px;
+  text-align:center;text-decoration:none;transition:border-color .15s,background .15s,transform .1s}
+.vx-btn:hover:not(:disabled){border-color:var(--tile);color:var(--tile)}
+.vx-btn:active:not(:disabled){transform:translateY(1px)}
+.vx-btn:disabled{cursor:default;opacity:.75}
+.vx-btn.vx-quiet{background:none;border-color:transparent;color:var(--tx2);padding:11px 12px;
+  text-decoration:underline;text-decoration-style:dashed;text-underline-offset:4px}
+.vx-btn.vx-quiet:hover:not(:disabled){color:var(--tile);background:var(--milk)}
+.vx-btn.vx-yes{border-color:var(--meadow);background:rgba(93,164,99,.12)}
+.vx-btn.vx-yes:hover:not(:disabled){border-color:var(--meadow);color:var(--tx)}
+.vx-block{display:flex;width:100%;text-align:left;justify-content:flex-start;margin:8px 0 0;
+  padding:12px 14px;font-weight:500;font-size:14.5px;border-radius:12px;line-height:1.4}
+.vx-block.vx-pick{border-color:var(--tile);background:rgba(199,91,57,.10)}
+.vx-block.vx-ok,.vx-btn.vx-ok{border-color:var(--meadow);background:rgba(93,164,99,.16)}
+.vx-block.vx-bad,.vx-btn.vx-bad{border-color:var(--err);background:rgba(176,58,46,.12)}
+.vx-block.vx-late{border-color:var(--line);background:var(--milk);opacity:.65}
+.vx-input{flex:1;min-width:150px;min-height:44px;padding:11px 14px;font-size:15px;font-family:inherit;
+  color:var(--tx);background:var(--milk);border:1.5px solid var(--line);border-radius:12px}
+.vx-input:focus{outline:none;border-color:var(--tile)}
+.vx-input.vx-ok{border-color:var(--meadow)}
+.vx-input.vx-bad{border-color:var(--err)}
+.vx-panel{display:block;margin:8px 0 2px;padding:11px 14px;color:var(--tx);background:var(--milk);
+  border:1px solid var(--line);border-left:3px solid var(--tile);border-radius:0 12px 12px 0;font-size:15.5px}
+.vx-num{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--tx2)}
+.vx-hint{color:var(--tx2);font-size:12.5px}
+.vx-bar{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.vx-bar-fill{height:100%;width:0;background:var(--tile);transition:width .3s}
+.vx-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--line)}
+.vx-sep{margin:16px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.vx-big{font-family:var(--serif);font-size:26px;font-weight:400;margin:10px 0}
+.vx-tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
+  padding:3px 10px;border-radius:999px;background:var(--milk);border:1px solid var(--line);margin-left:6px}
+.vx-why{margin:10px 0 0;padding:11px 13px;border-radius:12px;background:var(--milk);border:1px solid var(--line);
+  border-left:3px solid var(--sky);font-size:13.5px;color:var(--tx2)}`;
   document.head.appendChild(css);
 }
 
@@ -2688,7 +2711,7 @@ VIEWS.vocmod = slug => {
       for (let s = 0; s < ex.items.length; s += 5) {
         const pairs = ex.items.slice(s, s + 5);
         const wrap = document.createElement("div");
-        wrap.style.cssText = "margin:13px 0 0;padding-top:10px;border-top:1px solid rgba(128,128,128,.2)";
+        wrap.className = "vx-sep";
         const grid = document.createElement("div");
         grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:8px";
         let sel = null; const tried = {};
@@ -2698,15 +2721,15 @@ VIEWS.vocmod = slug => {
           b.dataset.side = side; b.dataset.idx = idx;
           b.onclick = () => {
             if (b.disabled) return;
-            if (side === "l") { grid.querySelectorAll('button[data-side="l"]').forEach(x => { if (!x.disabled) x.style.borderColor = ""; });
-              sel = b; b.style.borderColor = "currentColor"; }
+            if (side === "l") { grid.querySelectorAll('button[data-side="l"]').forEach(x => x.classList.remove("vx-pick"));
+              sel = b; b.classList.add("vx-pick"); }
             else if (sel) {
               const li = +sel.dataset.idx;
               if (li === +idx) { const first = !tried[li]; answered++; if (first) correct++; else punish(findW(sel.textContent));
                 sel.disabled = b.disabled = true;
-                [sel, b].forEach(x => { x.style.background = first ? "#3E7C4F" : "#8A8578"; x.style.color = "#fff"; x.style.borderColor = "transparent"; });
+                [sel, b].forEach(x => { x.classList.remove("vx-pick"); x.classList.add(first ? "vx-ok" : "vx-late"); });
                 sel = null; fin();
-              } else { tried[li] = true; b.style.borderColor = "#B4452F"; setTimeout(() => { if (!b.disabled) b.style.borderColor = ""; }, 600); }
+              } else { tried[li] = true; b.classList.add("vx-bad"); setTimeout(() => { if (!b.disabled) b.classList.remove("vx-bad"); }, 600); }
             }
           };
           return b;
@@ -2719,10 +2742,10 @@ VIEWS.vocmod = slug => {
     }
     ex.items.forEach((item, qi) => {
       const wrap = document.createElement("div");
-      wrap.style.cssText = "margin:13px 0 0;padding-top:10px;border-top:1px solid rgba(128,128,128,.2)";
-      const why = document.createElement("p"); why.style.cssText = "margin:8px 0 0;font-size:13px;display:none";
-      const q = document.createElement("p");
-      q.innerHTML = "<b>" + (qi + 1) + ".</b><span class='vx-panel'>" + item.q + "</span>";
+      wrap.className = "vx-sep";
+      const why = document.createElement("p"); why.className = "vx-why"; why.style.display = "none";
+      const q = document.createElement("p"); q.style.margin = "0";
+      q.innerHTML = "<span class='vx-num'>" + (qi + 1) + "</span><span class='vx-panel'>" + item.q + "</span>";
       wrap.appendChild(q);
       if (ex.type === "mc") {
         const btns = [];
@@ -2731,8 +2754,9 @@ VIEWS.vocmod = slug => {
           b.onclick = () => {
             if (wrap.dataset.done) return; wrap.dataset.done = "1"; answered++;
             const ok = oi === item.a; if (ok) correct++; else punish(findW(item.q) || findW(item.options[item.a]));
-            b.style.background = ok ? "#3E7C4F" : "#B4452F"; b.style.color = "#fff"; b.style.borderColor = "transparent";
-            if (!ok) { const r = btns[item.a]; r.style.background = "#3E7C4F"; r.style.color = "#fff"; r.style.borderColor = "transparent"; }
+            btns.forEach(x => { x.disabled = true; });
+            b.classList.add(ok ? "vx-ok" : "vx-bad");
+            if (!ok) btns[item.a].classList.add("vx-ok");
             why.style.display = "block"; why.innerHTML = (ok ? "✅ Верно. " : "❌ Не совсем. ") + esc(item.why); fin();
           };
           btns.push(b); wrap.appendChild(b);
@@ -2745,7 +2769,7 @@ VIEWS.vocmod = slug => {
           if (wrap.dataset.done || !inp.value.trim()) return; wrap.dataset.done = "1"; answered++;
           const ok = item.answers.map(VOC.norm).indexOf(VOC.norm(inp.value)) >= 0;
           if (ok) correct++; else punish(findW(item.answers[0]));
-          inp.style.borderColor = ok ? "#3E7C4F" : "#B4452F"; inp.disabled = b.disabled = true;
+          inp.classList.add(ok ? "vx-ok" : "vx-bad"); inp.disabled = b.disabled = true;
           why.style.display = "block";
           why.innerHTML = (ok ? "✅ Верно. " : "❌ Правильно: <b>" + esc(item.answers[0]) + "</b>. ") + esc(item.why); fin();
         };
